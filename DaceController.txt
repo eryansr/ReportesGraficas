@@ -1,0 +1,126 @@
+// ······############  CONTROLADOR PARA LAS ESTADISTICAS / GRAFICAS ESTUDIANTES  ############········
+// ······#################################################################################### 		 
+		
+			// -------------  Graficas Nuevos Regulares  -----------------------
+			public function getEstadisticasestudiantes(){
+
+			$regulares = DB::table('estudiantes_postgrado')->count();
+			$nuevos = DB::table('carrera')->where('lapso_ingreso')->count();
+
+			$lapso = array('' => 'Seleccionar...') + DB::table('materiasofrecidas')
+				->distinct()
+				->orderBy('LAPSO', 'desc')
+				->lists('LAPSO', 'LAPSO');
+
+			$seleccionar = DB::table('carrera')
+				->where('carrera.lapso_ingreso', '=', Input::get('lapso'))
+				->count();
+
+				return View::make('dace/estadisticas/nuevos_regulares')
+				   ->with(array('lapso'=>$lapso))
+					->with('title', 'Nuevo Regulares')
+					->with('regulares',$regulares)
+					->with('nuevos',$nuevos)
+					->with('seleccionar',$seleccionar);
+					
+			}
+
+			public function postEstadisticasestudiantes(){
+
+			$regulares = DB::table('estudiantes_postgrado')->count();
+			$seleccionar = DB::table('carrera')
+				->where('carrera.lapso_ingreso', '=', Input::get('lapso'))
+				->count();
+
+					return Response::json(array(
+					    'regulares' => $regulares,
+					    'seleccionar' => $seleccionar,    
+					));
+			
+			}
+
+
+			// -------------  Graficas Inscritos  ----------------------------
+			public function getEstadisticasinscritos() {
+				$inscri = DB::table('reinscripcion')->count();
+				$lapsos = DB::select('SELECT YEAR(reinscripcion.FECHA) as anio FROM reinscripcion WHERE reinscripcion.FECHA > 0 GROUP BY YEAR(reinscripcion.FECHA) DESC');
+				$lapsoI = DB::table('reinscripcion')->where('LAPSO', $lapsos[0]->anio.'-I')->count();
+				$lapsoII = DB::table('reinscripcion')->where('LAPSO', $lapsos[0]->anio.'-II')->count();
+				$lapsoIII = DB::table('reinscripcion')->where('LAPSO', $lapsos[0]->anio.'-III')->count();
+
+				$anios =[];
+				foreach ($lapsos as $lapso) {
+					$anios[$lapso->anio] = $lapso->anio;
+				}
+    
+				return View::make('dace/estadisticas/inscritos')->with(
+					array(
+						'anios' => $anios,
+						'title' => 'Inscritos',
+						'inscri' => $inscri,
+						'lapsoI' => $lapsoI,
+						'lapsoII' => $lapsoII,
+						'lapsoIII' => $lapsoIII,
+					)
+				);
+			}
+
+			public function postEstadisticasinscritos() {
+				$lapso = Input::get('lapso');
+				$lapsoI = DB::table('reinscripcion')->where('LAPSO', $lapso.'-I')->count();
+				$lapsoII = DB::table('reinscripcion')->where('LAPSO', $lapso.'-II')->count();
+				$lapsoIII = DB::table('reinscripcion')->where('LAPSO', $lapso.'-III')->count();
+
+
+    			return Response::json(
+    				array(
+						'lapsoI' => $lapsoI,
+						'lapsoII' => $lapsoII,
+						'lapsoIII' => $lapsoIII,
+					)
+				);
+			}
+
+
+			// -------------  Graficas Aprobados y Reprobados  ----------------
+			public function getEstadisticasaprobados(){
+
+				$lapso = array('' => 'Seleccionar...') + DB::table('materiasofrecidas')
+				->distinct()
+				->orderBy('LAPSO', 'desc')
+				->lists('LAPSO', 'LAPSO');
+
+				$seleccionar = DB::table('calificaciones')
+				->where('calificaciones.NOTA', '=', Input::get('lapso'))
+				->count();
+
+				$aprobados = DB::table('calificaciones')->where('NOTA','>',14)->where('NOTA','<',20)->count();
+				$reprobados = DB::table('calificaciones')->where('NOTA','>',0)->where('NOTA','<',14)->count();
+			
+				return View::make('dace/estadisticas/aprobados_reprobados')
+					->with(array('lapso'=>$lapso))
+					->with('title', 'Aprobados y Reprobados')
+					->with('aprobados', $aprobados)
+					->with('reprobados', $reprobados);
+			
+				}
+
+				public function postEstadisticasaprobados(){
+					$per =  Input::get('lapso');
+					$aprobados = DB::table('calificaciones')->where('NOTA','>',14)->where('NOTA','<=',20)->where('LAPSO', '=', Input::get('lapso'))->count();
+					$reprobados = DB::table('calificaciones')->where('NOTA','>=',0)->where('NOTA','<=',14)->where('LAPSO', '=', Input::get('lapso'))->count();
+
+							return Response::json(array(
+							    'aprobados' => $aprobados,
+							    'reprobados' => $reprobados,
+							    'per' => $per,    
+							));
+					
+			}
+
+
+
+
+
+// ···········########         FIN ESTADISTICAS ESTUDIANSTES         ########···············
+// ······#################################################################################### 
